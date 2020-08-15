@@ -1,0 +1,29 @@
+{
+  // Use IntelliSense to learn about possible attributes.
+  // Hover to view descriptions of existing attributes.
+  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Launch trim v6",
+      "skipFiles": ["<node_internals>/**"],
+      "program": "${workspaceFolder}/v6/build-trim.js"
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Launch build v6",
+      "skipFiles": ["<node_internals>/**"],
+      "program": "${workspaceFolder}/v6/build-sample.js"
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Launch trimed v6",
+      "skipFiles": ["<node_internals>/**"],
+      "program": "${workspaceFolder}/v6/out-trim.js"
+    }
+  ]
+}
