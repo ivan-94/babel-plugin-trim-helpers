@@ -1,4 +1,17 @@
 const { IGNORE_PROPERTIES } = require('./constants');
+
+/**
+ * 判断模块是否安装
+ * @param {string} name
+ */
+function inModuleInstalled(name) {
+  try {
+    return !!require.resolve(name);
+  } catch (err) {
+    return false;
+  }
+}
+
 /**
  * 规范化块作用域, 如果是单语句, 则单独拎出来比较
  * @param {import('babel-traverse').Node} node
@@ -185,8 +198,25 @@ function isNodeEqual(src, obj, t) {
   }
   return true;
 }
+/**
+ * 获取最近的指定类型的父节点
+ * @param {import('babel-traverse').NodePath} path
+ * @param {string} type
+ * @param {number} maxDepth 最多层数
+ */
+function getClosestParentPath(path, type, maxDepth = 8) {
+  while (maxDepth-- && path && path.node) {
+    if (path.node && path.node.type === type) {
+      return path;
+    }
+    path = path.parentPath;
+  }
+
+  return null;
+}
 
 module.exports = {
   isNodeEqual,
   calcNodeSimilarity,
+  getClosestParentPath,
 };

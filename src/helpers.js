@@ -14,6 +14,19 @@ function isHelperDefined(name) {
   }
 }
 
+function getHelperName(name) {
+  if (name[0] !== '_') {
+    return null;
+  }
+
+  const normalized = normalizeName(name);
+  if (isHelperDefined(normalized)) {
+    return normalized;
+  }
+
+  return null;
+}
+
 /**
  * @param {import('babel-template')} factory
  * @param {string} template
@@ -34,6 +47,7 @@ const helperCacheV6 = {};
  * 获取 v6 helper AST 节点
  * @param {string} name
  * @param {import('babel-template')} template
+ * @returns {import('babel-traverse').Node | null}
  */
 function getHelperV6(name, template) {
   if (name in HELPERS_V6) {
@@ -56,6 +70,7 @@ const helperCacheV7 = {};
  * @param {string} name
  * @param {import('babel-template')} template
  * @param {import('babel-types')} t
+ * @returns {{ast: import('babel-traverse').Node | null, deps: any[]} | null}
  */
 function getHelperV7(name, template, t) {
   if (name in HELPERS_V7) {
@@ -111,4 +126,5 @@ module.exports = {
   getHelperV6,
   getHelperV7,
   normalizeName,
+  getHelperName,
 };

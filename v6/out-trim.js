@@ -4,6 +4,8 @@ var _regenerator = require('babel-runtime/regenerator');
 
 var _regenerator2 = _interopRequireDefault(_regenerator);
 
+var _defaults = _interopRequireDefault(require('babel-runtime/helpers/defaults')).default;
+
 var _temporalUndefined = _interopRequireDefault(require('babel-runtime/helpers/temporalUndefined')).default;
 
 var _slicedToArray = _interopRequireDefault(require('babel-runtime/helpers/slicedToArray')).default;
@@ -65,8 +67,6 @@ var _instanceof = _interopRequireDefault(require('babel-runtime/helpers/instance
 var _inherits = _interopRequireDefault(require('babel-runtime/helpers/inherits')).default;
 
 var _defineProperty = _interopRequireDefault(require('babel-runtime/helpers/defineProperty')).default;
-
-var _defaults = _interopRequireDefault(require('babel-runtime/helpers/defaults')).default;
 
 var _defineEnumerableProperties = _interopRequireDefault(require('babel-runtime/helpers/defineEnumerableProperties')).default;
 

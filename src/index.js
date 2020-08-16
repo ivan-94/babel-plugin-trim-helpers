@@ -2,14 +2,11 @@
 const {
   INTEROP_REQUIRE_DEFAULT,
   _INTEROP_REQUIRE_DEFAULT,
+  V6_MODULE_NAME,
+  V7_MODULE_NAME,
 } = require('./constants');
-const {
-  isHelperDefined,
-  getHelperV6,
-  getHelperV7,
-  normalizeName,
-} = require('./helpers');
-const { calcNodeSimilarity } = require('./utils');
+const { getHelperV6, getHelperV7, getHelperName } = require('./helpers');
+const { calcNodeSimilarity, getClosestParentPath } = require('./utils');
 
 /**
  *
@@ -20,55 +17,67 @@ module.exports = function (babel) {
   const { types: t, template } = babel;
   let isDebug = false;
 
-  function getHelperName(name) {
-    if (name[0] !== '_') {
-      return null;
+  function v6Checker(name, helperName, test) {
+    const helper = getHelperV6(helperName, template);
+    if (helper) {
+      const similarity = calcNodeSimilarity(helper, test, t);
+      if (isDebug) {
+        console.log(`v6 ${name} -> ${helperName} similarity: ${similarity}`);
+      }
+      if (similarity > 60) {
+        return {
+          type: 'v6',
+          name: helperName,
+        };
+      }
     }
+  }
 
-    const normalized = normalizeName(name);
-    if (isHelperDefined(normalized)) {
-      return normalized;
+  function v7Checker(name, helperName, test) {
+    const helper = getHelperV7(helperName, template, t);
+    if (helper) {
+      const similarity = calcNodeSimilarity(helper.ast, test, t);
+      if (isDebug) {
+        console.log(`v7 ${name} -> ${helperName} similarity: ${similarity}`);
+      }
+
+      if (similarity > 60) {
+        return {
+          type: 'v7',
+          name: helperName,
+          deps: helper.deps,
+        };
+      }
     }
-
-    return null;
   }
 
   /**
    * @param {string} name
-   * @param {import('babel-traverse').Node} node
+   * @param {import('babel-traverse').Node} test
    * @returns {{type: 'v6' | 'v7', name: string, deps?: any[]} | null}
    */
-  function matchHelper(name, node) {
+  function matchHelper(name, test, state) {
     const helperName = getHelperName(name);
 
     if (helperName) {
-      const helperV6 = getHelperV6(helperName, template);
-      if (helperV6) {
-        const similarity = calcNodeSimilarity(helperV6, node, t);
-        if (isDebug) {
-          console.log(`v6 ${name} -> ${helperName} similarity: ${similarity}`);
-        }
-        if (similarity > 60) {
-          return {
-            type: 'v6',
-            name: helperName,
-          };
-        }
-      }
+      if (state.helperVersion != null) {
+        const checker = state.helperVersion === 6 ? v6Checker : v7Checker;
+        return checker(name, helperName, test);
+      } else {
+        // 某些 helper 在 v6 和 v7 都存在
+        const v7Info = v7Checker(name, helperName, test);
+        const v6Info = v6Checker(name, helperName, test);
 
-      const helperV7 = getHelperV7(helperName, template, t);
-      if (helperV7) {
-        const similarity = calcNodeSimilarity(helperV7.ast, node, t);
-        if (isDebug) {
-          console.log(`v7 ${name} -> ${helperName} similarity: ${similarity}`);
-        }
-
-        if (similarity > 60) {
-          return {
-            type: 'v7',
-            name: helperName,
-            deps: helperV7.deps,
-          };
+        if (v7Info && !v6Info) {
+          state.helperVersion = 7;
+          return v7Info;
+        } else if (!v7Info && v6Info) {
+          state.helperVersion = 6;
+          return v6Info;
+        } else if (v7Info && v6Info) {
+          // 有歧义，暂定为 v7
+          state.ambiguity = true;
+          return v7Info;
         }
       }
     }
@@ -85,8 +94,8 @@ module.exports = function (babel) {
    */
   function createRequirement(type, name, path, opt) {
     const {
-      moduleNameV6 = 'babel-runtime',
-      moduleNameV7 = '@babel/runtime',
+      moduleNameV6 = V6_MODULE_NAME,
+      moduleNameV7 = V7_MODULE_NAME,
     } = opt;
     const moduleName = type === 'v6' ? moduleNameV6 : moduleNameV7;
 
@@ -123,23 +132,6 @@ module.exports = function (babel) {
         binding.path.remove();
       }
     }
-  }
-
-  /**
-   * 获取最近的指定类型的父节点
-   * @param {import('babel-traverse').NodePath} path
-   * @param {string} type
-   * @param {number} maxDepth 最多层数
-   */
-  function getClosestParentPath(path, type, maxDepth = 8) {
-    while (maxDepth-- && path && path.node) {
-      if (path.node && path.node.type === type) {
-        return path;
-      }
-      path = path.parentPath;
-    }
-
-    return null;
   }
 
   /**
@@ -180,7 +172,7 @@ module.exports = function (babel) {
       } else {
         // 非函数声明或者变量声明，可以是条件语句
         // 通过变量绑定查找对应的语句，并删除
-        removeDepsStatements(path, dep)
+        removeDepsStatements(path, dep);
       }
     }
 
@@ -190,17 +182,50 @@ module.exports = function (babel) {
   }
 
   return {
-    name: 'helper-trim', // not required
+    name: 'babel-plugin-helper-trimer', // not required
     pre(file) {
-      if (this.opts.debug) {
-        isDebug = true;
-      }
+      const { debug = false } = this.opts;
+      isDebug = debug;
     },
     visitor: {
+      Program: {
+        enter(path, state) {
+          // 如果检测到当前程序使用指定版本的 helper，就会忽略其他版本的 helper 提高匹配速度
+          state.helperVersion = undefined;
+          // 版本上有歧义
+          state.ambiguity = false;
+        },
+        exit(path, state) {
+          // 调整版本
+          if (state.ambiguity && state.helperVersion === 6) {
+            const {
+              moduleNameV6 = V6_MODULE_NAME,
+              moduleNameV7 = V7_MODULE_NAME,
+            } = state.opts;
+            // 纠正 v7 helper 导入为 v6
+            path.traverse({
+              CallExpression(path, state) {
+                const node = path.node;
+                if (
+                  t.isIdentifier(node.callee) &&
+                  node.callee.name === 'require' &&
+                  node.arguments.length &&
+                  t.isStringLiteral(node.arguments[0]) &&
+                  node.arguments[0].value.indexOf(moduleNameV7) !== -1
+                ) {
+                  node.arguments[0] = t.stringLiteral(
+                    node.arguments[0].value.replace(moduleNameV7, moduleNameV6),
+                  );
+                }
+              },
+            });
+          }
+        },
+      },
       // var 导入
       VariableDeclarator(path, state) {
         const name = path.node.id.name;
-        const helper = matchHelper(name, path.node.init);
+        const helper = matchHelper(name, path.node.init, state);
 
         if (helper) {
           // 移除依赖
@@ -215,7 +240,7 @@ module.exports = function (babel) {
       },
       FunctionDeclaration(path, state) {
         const name = path.node.id.name;
-        const helper = matchHelper(name, path.node);
+        const helper = matchHelper(name, path.node, state);
         if (helper) {
           removeDeps(path, helper.deps);
           path.replaceWith(
