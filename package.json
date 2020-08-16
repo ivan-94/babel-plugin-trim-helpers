@@ -8,14 +8,17 @@
     "sample-v6": "node ./v6/build-sample.js",
     "trim-v6": "node ./v6/build-trim.js"
   },
-  "dependencies": {
+  "dependencies": {},
+  "devDependencies": {
     "@types/lodash": "^4.14.159",
     "babel-cli": "^6.26.0",
     "babel-plugin-transform-runtime": "^6.23.0",
     "babel-preset-env": "^1.7.0",
-    "loadash": "^1.0.0"
-  },
-  "devDependencies": {
+    "@babel/core": "^7.11.1",
+    "@babel/helpers": "^7.10.4",
+    "@babel/plugin-transform-runtime": "^7.11.0",
+    "@babel/preset-env": "^7.11.0",
+    "@babel/runtime": "^7.11.2",
     "@types/babel-core": "^6.25.6"
   }
 }

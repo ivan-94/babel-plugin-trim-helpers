@@ -11,6 +11,7 @@ function trimbyHelperTrim() {
           require('../src'),
           {
             moduleName: 'babel-runtime',
+            debug: true,
           },
         ],
       ],

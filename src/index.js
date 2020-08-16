@@ -3,12 +3,8 @@ const {
   INTEROP_REQUIRE_DEFAULT,
   _INTEROP_REQUIRE_DEFAULT,
 } = require('./constants');
-const {
-  isHelperDefined,
-  getHelper,
-  normalizeName,
-} = require('./helpers');
-const { isNodeEqual } = require('./utils');
+const { isHelperDefined, getHelper, normalizeName } = require('./helpers');
+const { calcNodeSimilarity } = require('./utils');
 
 /**
  *
@@ -17,6 +13,7 @@ const { isNodeEqual } = require('./utils');
  */
 module.exports = function (babel) {
   const { types: t, template } = babel;
+  let isDebug = false;
 
   function isHelperMaybe(name) {
     const normalized = normalizeName(name);
@@ -33,23 +30,19 @@ module.exports = function (babel) {
    * @param {string} name
    * @param {import('babel-traverse').Node} node
    */
-  function nodeMatch(name, node) {
-    const helper = getHelper(name, template);
-    if (!helper) {
-      return false;
-    }
-
-    return isNodeEqual(node, helper, t);
-  }
-
-  /**
-   * @param {string} name
-   * @param {import('babel-traverse').Node} node
-   */
   function isHelper(name, node) {
     const info = isHelperMaybe(name);
     if (info) {
-      if (nodeMatch(info.name, node)) {
+      const helper = getHelper(info.name, template);
+      if (!helper) {
+        return null;
+      }
+
+      const similarity = calcNodeSimilarity(helper, node, t);
+      if (isDebug) {
+        console.log(`${name} -> ${info.name} similarity: ${similarity}`);
+      }
+      if (similarity > 60) {
         return info;
       }
     }
@@ -84,6 +77,11 @@ module.exports = function (babel) {
 
   return {
     name: 'helper-trim', // not required
+    pre(file) {
+      if (this.opts.debug) {
+        isDebug = true;
+      }
+    },
     visitor: {
       // var 导入
       VariableDeclarator(path, state) {
