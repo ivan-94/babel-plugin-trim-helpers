@@ -9,17 +9,35 @@ const HELPERS_V7 = require('./helpers_v7');
 function isHelperDefined(name) {
   if (BLACK_LIST.has(name)) {
     return false;
-  } else if (name in HELPERS_V6 || name in HELPERS_V7) {
+  } else if (name in HELPERS_V7 || name in HELPERS_V6) {
     return true;
   }
+  return false;
 }
 
+/**
+ * @param {string} name
+ */
+function normalizeName(name) {
+  const matched = name.match(UNIQ_NAME_REG);
+  if (matched) {
+    return matched[1];
+  }
+  return null;
+}
+
+/**
+ * 获取helper 名称，目前假设helper 都是以 _helper 形式命名的
+ * 当用户代码和 helper 名称出现冲突时，可以会加上数字。这种情况我们不处理，因为概率比较低
+ * @param {*} name
+ */
 function getHelperName(name) {
+  // 通常都是以 _ 为前缀
   if (name[0] !== '_') {
     return null;
   }
 
-  const normalized = normalizeName(name);
+  const normalized = name.slice(1);
   if (isHelperDefined(normalized)) {
     return normalized;
   }
@@ -105,17 +123,6 @@ function getHelperV7(name, template, t) {
     }
   }
 
-  return null;
-}
-
-/**
- * @param {string} name
- */
-function normalizeName(name) {
-  const matched = name.match(UNIQ_NAME_REG);
-  if (matched) {
-    return matched[1];
-  }
   return null;
 }
 

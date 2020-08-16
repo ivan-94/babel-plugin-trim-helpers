@@ -28,4 +28,3 @@ function trimbyHelperTrim() {
 }
 
 trimbyHelperTrim();
-trimbyHelperTrim();
