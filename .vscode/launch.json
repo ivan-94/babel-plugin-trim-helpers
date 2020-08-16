@@ -24,6 +24,20 @@
       "name": "Launch trimed v6",
       "skipFiles": ["<node_internals>/**"],
       "program": "${workspaceFolder}/v6/out-trim.js"
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Launch trim v7",
+      "skipFiles": ["<node_internals>/**"],
+      "program": "${workspaceFolder}/v7/build-trim.js"
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Launch trimed v7",
+      "skipFiles": ["<node_internals>/**"],
+      "program": "${workspaceFolder}/v7/out-trim.js"
     }
   ]
 }

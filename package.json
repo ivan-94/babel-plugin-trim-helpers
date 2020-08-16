@@ -6,7 +6,9 @@
   "license": "MIT",
   "scripts": {
     "sample-v6": "node ./v6/build-sample.js",
-    "trim-v6": "node ./v6/build-trim.js"
+    "trim-v6": "node ./v6/build-trim.js",
+    "sample-v7": "node ./v7/build-sample.js",
+    "trim-v7": "node ./v7/build-trim.js"
   },
   "dependencies": {},
   "devDependencies": {
