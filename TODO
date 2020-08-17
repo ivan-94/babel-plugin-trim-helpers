@@ -1,0 +1,12 @@
+[] test
+  [x] 镜像测试
+  [x] 没有 _interopRequireDefault 场景
+  [x] interopRequireDefault 提升
+  [x] v6
+  [x] v7
+  [x] v6 & v7 重叠场景测试
+  [x] 兼容v6、v7 运行时
+  [x] 多文件测试
+[] 匹配优化
+[] tslib support
+[] tslib to babel-runtime

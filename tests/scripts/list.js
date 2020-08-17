@@ -25,6 +25,12 @@ module.exports = [
     options: {},
   },
   {
+    target: 'simple',
+    version: 7,
+    helpers: false,
+    options: {},
+  },
+  {
     target: 'sample-taro',
     ignoreGenerate: true,
     version: 7,
