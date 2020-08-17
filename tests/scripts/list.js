@@ -1,6 +1,7 @@
 module.exports = [
   {
     target: 'v6-all',
+    // helper 由什么 版本的 babel 生成
     version: 6,
     helpers: false,
     options: {},

@@ -1,4 +1,5 @@
 const path = require('path');
+const { VERSIONS } = require('../helpers');
 const list = require('../scripts/list');
 
 /**
@@ -7,11 +8,18 @@ const list = require('../scripts/list');
 describe('eval', () => {
   describe('require', () => {
     list.forEach((i) => {
-      test(`require ${i.target}`, () => {
-        const p = path.join(__dirname, `../fixtures/${i.target}/trimed.js`);
-        expect(() => {
-          require(p);
-        }).not.toThrow();
+      describe(`require ${i.target}`, () => {
+        VERSIONS.forEach((v) => {
+          test(`v${v} runtime`, () => {
+            const p = path.join(
+              __dirname,
+              `../fixtures/${i.target}/trimed-v${v}.js`,
+            );
+            expect(() => {
+              require(p);
+            }).not.toThrow();
+          });
+        });
       });
     });
   });
