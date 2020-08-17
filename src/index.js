@@ -77,7 +77,7 @@ module.exports = function (babel) {
         } else if (v7Info && v6Info) {
           // 有歧义，暂定为 v7
           state.ambiguity = true;
-          return v7Info;
+          return state.preferV7 ? v7Info : v6Info;
         }
       }
     }
@@ -108,9 +108,18 @@ module.exports = function (babel) {
         funcExpr.body,
       );
       const parentScope = path.scope.parent || path.scope;
+
       // 插入
-      parentScope.path.unshiftContainer('body', funcDesc);
-      parentScope.registerDeclaration(parentScope.path.get('body')[0]);
+      if (parentScope.path.isFunction()) {
+        // 函数作用域
+        const bodyPath = parentScope.path.get('body');
+        bodyPath.unshiftContainer('body', funcDesc);
+        bodyPath.scope.registerDeclaration(bodyPath.get('body')[0]);
+      } else {
+        // program 作用域
+        parentScope.path.unshiftContainer('body', funcDesc);
+        parentScope.registerDeclaration(parentScope.path.get('body')[0]);
+      }
     }
     return t.memberExpression(
       t.callExpression(t.identifier(_INTEROP_REQUIRE_DEFAULT), [
@@ -196,10 +205,12 @@ module.exports = function (babel) {
     visitor: {
       Program: {
         enter(path, state) {
+          const { preferV7 = true } = state.opts;
           // 如果检测到当前程序使用指定版本的 helper，就会忽略其他版本的 helper 提高匹配速度
           state.helperVersion = undefined;
           // 版本上有歧义
           state.ambiguity = false;
+          state.preferV7 = preferV7;
         },
         exit(path, state) {
           // 调整版本

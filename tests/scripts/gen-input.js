@@ -10,5 +10,9 @@ list.forEach((i) => {
   const _out = path.join(__dirname, `../fixtures/${i.target}/untrimed.js`);
   const transformer = i.version === 6 ? transformV6 : transformV7;
   const injectAll = i.target.includes('all');
-  transformer(_in, _out, i.helpers, injectAll);
+  transformer(_in, _out, {
+    helpers: i.helpers,
+    injectAll,
+    envOptions: i.envOptions,
+  });
 });

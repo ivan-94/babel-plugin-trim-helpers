@@ -28,12 +28,11 @@ function generateHelpers(version) {
 function transformV6(
   inputPath,
   outputPath,
-  helpers = false,
-  injectAll = false,
+  { helpers = false, injectAll = false, envOptions = {} } = {},
 ) {
   const input = fs.readFileSync(inputPath).toString();
   const res = v6Transform(input, {
-    presets: [require('babel-preset-env')],
+    presets: [[require('babel-preset-env'), envOptions]],
     plugins: [
       injectAll && generateHelpers(6),
       [
@@ -54,12 +53,11 @@ function transformV6(
 function transformV7(
   inputPath,
   outputPath,
-  helpers = false,
-  injectAll = false,
+  { helpers = false, injectAll = false, envOptions = {} } = {},
 ) {
   const input = fs.readFileSync(inputPath).toString();
   const res = v7Transform(input, {
-    presets: [require('@babel/preset-env')],
+    presets: [[require('@babel/preset-env'), envOptions]],
     plugins: [
       injectAll && generateHelpers(7),
       [
