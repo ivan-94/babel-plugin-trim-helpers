@@ -24,7 +24,11 @@ var _asyncGenerator = _interopRequireDefault(require('babel-runtime/helpers/asyn
 
 var _jsx = _interopRequireDefault(require('babel-runtime/helpers/jsx')).default;
 
-var _typeof2 = _interopRequireDefault(require('babel-runtime/helpers/typeof')).default;
+var _typeof2 = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) {
+  return typeof obj;
+} : function (obj) {
+  return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj;
+};
 
 var _toConsumableArray = _interopRequireDefault(require('babel-runtime/helpers/toConsumableArray')).default;
 
@@ -46,17 +50,7 @@ var _objectDestructuringEmpty = _interopRequireDefault(require('babel-runtime/he
 
 var _newArrowCheck = _interopRequireDefault(require('babel-runtime/helpers/newArrowCheck')).default;
 
-function _interopRequireWildcard(obj) {
-  if (obj && obj.__esModule) {
-    return obj;
-  } else {
-    var newObj = {};if (obj != null) {
-      for (var key in obj) {
-        if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key];
-      }
-    }newObj.default = obj;return newObj;
-  }
-}
+var _interopRequireWildcard = _interopRequireDefault(require('babel-runtime/helpers/interopRequireWildcard')).default;
 
 function _interopRequireDefault(obj) {
   return obj && obj.__esModule ? obj : { default: obj };

@@ -101,10 +101,16 @@ module.exports = function (babel) {
 
     // 导入 _interopRequireDefault
     if (!path.scope.hasBinding(_INTEROP_REQUIRE_DEFAULT)) {
-      path.scope.push({
-        id: t.Identifier(_INTEROP_REQUIRE_DEFAULT),
-        init: getHelperV6(INTEROP_REQUIRE_DEFAULT, template),
-      });
+      const funcExpr = getHelperV6(INTEROP_REQUIRE_DEFAULT, template);
+      const funcDesc = t.functionDeclaration(
+        t.identifier(_INTEROP_REQUIRE_DEFAULT),
+        funcExpr.params,
+        funcExpr.body,
+      );
+      const parentScope = path.scope.parent || path.scope;
+      // 插入
+      parentScope.path.unshiftContainer('body', funcDesc);
+      parentScope.registerDeclaration(parentScope.path.get('body')[0]);
     }
     return t.memberExpression(
       t.callExpression(t.identifier(_INTEROP_REQUIRE_DEFAULT), [
