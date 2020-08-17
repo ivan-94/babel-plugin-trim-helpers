@@ -1,7 +1,7 @@
-const BLACK_LIST = new Set(['interopRequireDefault', 'interopRequireWildcard']);
 const IGNORE_PROPERTIES = new Set(['start', 'end', 'loc', 'comments', 'extra']);
 const INTEROP_REQUIRE_DEFAULT = 'interopRequireDefault';
 const _INTEROP_REQUIRE_DEFAULT = '_interopRequireDefault';
+const BLACK_LIST = new Set([INTEROP_REQUIRE_DEFAULT]);
 const V6_MODULE_NAME = 'babel-runtime';
 const V7_MODULE_NAME = '@babel/runtime';
 
