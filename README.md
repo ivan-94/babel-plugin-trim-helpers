@@ -1,6 +1,9 @@
 # babel-plugin-trim-helpers
 
-将内联的 Helper 转换为模块导入
+[![](https://img.shields.io/npm/v/babel-plugin-trim-helpers?style=for-the-badge)](https://www.npmjs.com/package/babel-plugin-trim-helpers)
+[![](https://img.shields.io/github/stars/ivan-94/babel-plugin-trim-helpers?style=for-the-badge)](https://github.com/ivan-94/babel-plugin-trim-helpers)
+
+将内联的 Babel Helper 转换为模块导入, 从而减少打包的体积。主要用于第三方库
 
 ## Example
 
