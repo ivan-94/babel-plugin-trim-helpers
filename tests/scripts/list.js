@@ -24,4 +24,18 @@ module.exports = [
     helpers: true,
     options: {},
   },
+  {
+    target: 'sample-taro',
+    ignoreGenerate: true,
+    version: 7,
+    helpers: false,
+    options: {},
+  },
+  {
+    target: 'sample-redux',
+    ignoreGenerate: true,
+    version: 7,
+    helpers: false,
+    options: {},
+  },
 ];
