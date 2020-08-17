@@ -13,13 +13,13 @@ module.exports = [
     options: {},
   },
   {
-    target: 'v6-transformed',
+    target: 'v6-all-transformed',
     version: 6,
     helpers: true,
     options: {},
   },
   {
-    target: 'v7-transformed',
+    target: 'v7-all-transformed',
     version: 7,
     helpers: true,
     options: {},

@@ -25,12 +25,17 @@ function generateHelpers(version) {
   };
 }
 
-function transformV6(inputPath, outputPath, helpers = false) {
+function transformV6(
+  inputPath,
+  outputPath,
+  helpers = false,
+  injectAll = false,
+) {
   const input = fs.readFileSync(inputPath).toString();
   const res = v6Transform(input, {
     presets: [require('babel-preset-env')],
     plugins: [
-      generateHelpers(6),
+      injectAll && generateHelpers(6),
       [
         require('babel-plugin-transform-runtime'),
         {
@@ -40,18 +45,23 @@ function transformV6(inputPath, outputPath, helpers = false) {
           moduleName: 'babel-runtime',
         },
       ],
-    ],
+    ].filter(Boolean),
   });
 
   fs.writeFileSync(outputPath, res.code);
 }
 
-function transformV7(inputPath, outputPath, helpers = false) {
+function transformV7(
+  inputPath,
+  outputPath,
+  helpers = false,
+  injectAll = false,
+) {
   const input = fs.readFileSync(inputPath).toString();
   const res = v7Transform(input, {
     presets: [require('@babel/preset-env')],
     plugins: [
-      generateHelpers(7),
+      injectAll && generateHelpers(7),
       [
         require('@babel/plugin-transform-runtime'),
         {
@@ -59,7 +69,7 @@ function transformV7(inputPath, outputPath, helpers = false) {
           regenerator: true,
         },
       ],
-    ],
+    ].filter(Boolean),
   });
 
   fs.writeFileSync(outputPath, res.code);

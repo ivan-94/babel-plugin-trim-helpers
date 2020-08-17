@@ -9,5 +9,6 @@ list.forEach((i) => {
   const _in = path.join(__dirname, `../fixtures/${i.target}/input.js`);
   const _out = path.join(__dirname, `../fixtures/${i.target}/untrimed.js`);
   const transformer = i.version === 6 ? transformV6 : transformV7;
-  transformer(_in, _out, i.helpers);
+  const injectAll = i.target.includes('all');
+  transformer(_in, _out, i.helpers, injectAll);
 });
