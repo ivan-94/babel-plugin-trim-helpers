@@ -1,4 +1,3 @@
-// @ts-check
 const {
   INTEROP_REQUIRE_DEFAULT,
   _INTEROP_REQUIRE_DEFAULT,
