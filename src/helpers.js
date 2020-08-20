@@ -3,6 +3,13 @@ const HELPERS_V6 = require('./helpers_v6');
 const HELPERS_V7 = require('./helpers_v7');
 
 /**
+ * @typedef {import('@babel/traverse').Node} BabelNode
+ * @typedef {import('@babel/template').default} TemplateBuilder
+ * @typedef {import('@babel/template').TemplateBuilderOptions} TemplateBuilderOptions
+ * @typedef {import('@babel/types')} Types
+ */
+
+/**
  * 是否为 helper 名称
  * @param {string} name
  */
@@ -46,8 +53,9 @@ function getHelperName(name) {
 }
 
 /**
- * @param {import('babel-template')} factory
+ * @param {TemplateBuilder} factory
  * @param {string} template
+ * @param {TemplateBuilderOptions} [options]
  */
 function template2AST(factory, template, options) {
   if (typeof factory.ast === 'function') {
@@ -57,21 +65,23 @@ function template2AST(factory, template, options) {
 }
 
 /**
- * @type {{[name: string]: import('babel-traverse').Node}}
+ * @type {{[name: string]: BabelNode}}
  */
 const helperCacheV6 = {};
 
 /**
  * 获取 v6 helper AST 节点
  * @param {string} name
- * @param {import('babel-template')} template
- * @returns {import('babel-traverse').Node | null}
+ * @param {TemplateBuilder} template
+ * @returns {BabelNode | null}
  */
 function getHelperV6(name, template) {
   if (name in HELPERS_V6) {
     if (name in helperCacheV6) {
       return helperCacheV6[name];
     }
+
+    // @ts-ignore
     const node = template2AST(template, HELPERS_V6[name]).expression;
     return (helperCacheV6[name] = node);
   }
@@ -79,16 +89,16 @@ function getHelperV6(name, template) {
 }
 
 /**
- * @type {{[name: string]: {ast: import('babel-traverse').Node, deps: any[]}}}}
+ * @type {{[name: string]: {ast: BabelNode, deps: any[]}}}}
  */
 const helperCacheV7 = {};
 
 /**
  * 获取 v7 helper AST 节点
  * @param {string} name
- * @param {import('babel-template')} template
- * @param {import('babel-types')} t
- * @returns {{ast: import('babel-traverse').Node | null, deps: any[]} | null}
+ * @param {TemplateBuilder} template
+ * @param {Types} t
+ * @returns {{ast: BabelNode | undefined, deps: any[]} | null}
  */
 function getHelperV7(name, template, t) {
   if (name in HELPERS_V7) {
@@ -97,10 +107,12 @@ function getHelperV7(name, template, t) {
     }
 
     try {
+      // @ts-ignore
       const node = template2AST(template, HELPERS_V7[name], {
         sourceType: 'module',
       });
       const nodes = Array.isArray(node) ? node : [node];
+
       let ast,
         deps = [];
 
@@ -115,6 +127,7 @@ function getHelperV7(name, template, t) {
 
       // 节点解析
       return (helperCacheV7[name] = {
+        // @ts-ignore
         ast,
         deps,
       });

@@ -1,21 +1,51 @@
-const {
-  INTEROP_REQUIRE_DEFAULT,
-  _INTEROP_REQUIRE_DEFAULT,
-  V6_MODULE_NAME,
-  V7_MODULE_NAME,
-} = require('./constants');
+const { INTEROP_REQUIRE_DEFAULT, _INTEROP_REQUIRE_DEFAULT, V6_MODULE_NAME, V7_MODULE_NAME } = require('./constants');
 const { getHelperV6, getHelperV7, getHelperName } = require('./helpers');
 const { calcNodeSimilarity, getClosestParentPath } = require('./utils');
 
 /**
+ * @template T
+ * @typedef {import('@babel/traverse').NodePath<T>} GBabelNodePath
+ */
+
+/**
+ * @typedef {import('@babel/traverse').Node} BabelNode
+ * @typedef {import('@babel/traverse').NodePath} BabelNodePath
+ * @typedef {import('@babel/types').Identifier} BabelIdentifier
+ * @typedef {import('@babel/types').FunctionExpression} BabelFunctionExpression
  *
- * @param {import('babel-core')} babel
- * @returns {import('babel-core').PluginObj<any>}
+ * @typedef {{type: 'v6' | 'v7', name: string, deps?: any[]}} HelperInfo
+ *
+ * @typedef {{
+ *  moduleNameV6: string // babel v6 runtime name
+ *  moduleNameV7: string // babel v7 runtime name
+ *  preferV7: boolean    // 优先按照 v7 helper 识别
+ *  debug?: boolean
+ * }} PluginOptions 插件配置项
+ *
+ * @typedef {{
+ *  opts: Partial<PluginOptions>
+ *  helperVersion?: number
+ *  preferV7?: boolean
+ *  ambiguity?: boolean
+ * }} State
+ */
+
+/**
+ *
+ * @param {import('@babel/core')} babel
+ * @returns {import('@babel/core').PluginObj<State>}
  */
 module.exports = function (babel) {
   const { types: t, template } = babel;
   let isDebug = false;
 
+  /**
+   * v6 匹配器
+   * @param {string} name 标识符名称
+   * @param {string} helperName helper 名称
+   * @param {BabelNode} test
+   * @returns {HelperInfo | null}
+   */
   function v6Checker(name, helperName, test) {
     const helper = getHelperV6(helperName, template);
     if (helper) {
@@ -30,8 +60,16 @@ module.exports = function (babel) {
         };
       }
     }
+    return null;
   }
 
+  /**
+   * v6 匹配器
+   * @param {string} name 标识符名称
+   * @param {string} helperName helper 名称
+   * @param {BabelNode} test
+   * @returns {HelperInfo | null}
+   */
   function v7Checker(name, helperName, test) {
     const helper = getHelperV7(helperName, template, t);
     if (helper) {
@@ -48,12 +86,15 @@ module.exports = function (babel) {
         };
       }
     }
+    return null;
   }
 
   /**
+   * helper 匹配
    * @param {string} name
-   * @param {import('babel-traverse').Node} test
-   * @returns {{type: 'v6' | 'v7', name: string, deps?: any[]} | null}
+   * @param {BabelNode} test
+   * @param {State} state
+   * @returns {HelperInfo | null}
    */
   function matchHelper(name, test, state) {
     const helperName = getHelperName(name);
@@ -87,31 +128,24 @@ module.exports = function (babel) {
   /**
    * 构造导入函数
    * @param {'v6' | 'v7'} type
-   * @param {import('babel-traverse').NodePath} path
+   * @param {BabelNodePath} path
    * @param {string} name
-   * @param {any} opt
+   * @param {State} state
    */
-  function createRequirement(type, name, path, opt) {
-    const {
-      moduleNameV6 = V6_MODULE_NAME,
-      moduleNameV7 = V7_MODULE_NAME,
-    } = opt;
+  function createRequirement(type, name, path, state) {
+    const { moduleNameV6 = V6_MODULE_NAME, moduleNameV7 = V7_MODULE_NAME } = state.opts;
     const moduleName = type === 'v6' ? moduleNameV6 : moduleNameV7;
 
     // 导入 _interopRequireDefault
     if (!path.scope.hasBinding(_INTEROP_REQUIRE_DEFAULT)) {
-      const funcExpr = getHelperV6(INTEROP_REQUIRE_DEFAULT, template);
-      const funcDesc = t.functionDeclaration(
-        t.identifier(_INTEROP_REQUIRE_DEFAULT),
-        funcExpr.params,
-        funcExpr.body,
-      );
+      const funcExpr = /** @type {BabelFunctionExpression} */ (getHelperV6(INTEROP_REQUIRE_DEFAULT, template));
+      const funcDesc = t.functionDeclaration(t.identifier(_INTEROP_REQUIRE_DEFAULT), funcExpr.params, funcExpr.body);
       const parentScope = path.scope.parent || path.scope;
 
       // 插入
       if (parentScope.path.isFunction()) {
         // 函数作用域
-        const bodyPath = parentScope.path.get('body');
+        const bodyPath = /** @type {GBabelNodePath<BabelFunctionExpression>} */ (parentScope.path.get('body'));
         bodyPath.unshiftContainer('body', funcDesc);
         bodyPath.scope.registerDeclaration(bodyPath.get('body')[0]);
       } else {
@@ -122,27 +156,21 @@ module.exports = function (babel) {
     }
     return t.memberExpression(
       t.callExpression(t.identifier(_INTEROP_REQUIRE_DEFAULT), [
-        t.callExpression(t.identifier('require'), [
-          t.stringLiteral(`${moduleName}/helpers/${name}`),
-        ]),
+        t.callExpression(t.identifier('require'), [t.stringLiteral(`${moduleName}/helpers/${name}`)]),
       ]),
-      t.identifier('default'),
+      t.identifier('default')
     );
   }
 
   /**
    *
-   * @param {import('babel-traverse').NodePath} path
-   * @param {Array<[string, import('babel-traverse').Node]>} ids
+   * @param {BabelNodePath} path
+   * @param {Array<[string, BabelNode]>} ids
    */
   function removeBindings(path, ids) {
     for (const [name, ast] of ids) {
       const binding = path.scope.getBinding(name);
-      if (
-        binding &&
-        binding.path.node &&
-        calcNodeSimilarity(ast, binding.path.node, t) > 60
-      ) {
+      if (binding && binding.path.node && calcNodeSimilarity(ast, binding.path.node, t) > 60) {
         binding.path.remove();
       }
     }
@@ -150,8 +178,8 @@ module.exports = function (babel) {
 
   /**
    * 删除依赖的语句
-   * @param {import('babel-traverse').NodePath} path
-   * @param {import('babel-traverse').Node} dep
+   * @param {BabelNodePath} path
+   * @param {BabelNode} dep
    */
   function removeDepsStatements(path, dep) {
     const binding = path.scope.getBinding(path.node.id.name);
@@ -168,20 +196,22 @@ module.exports = function (babel) {
   /**
    * 移除 helper 导入的其他标识符，有可能这些标识符已经被改名了，不过没关系，
    * 因为这些依赖最后没有被任何代码引用，在代码压缩时会被移除
-   * @param {import('babel-traverse').NodePath} path
-   * @param {import('babel-traverse').Node[] | null} deps
+   * @param {BabelNodePath} path
+   * @param {BabelNode[] | undefined} deps
    */
   function removeDeps(path, deps) {
     if (deps == null || deps.length === 0) {
       return;
     }
+
+    /** @type Array<[string, BabelNode]> */
     const ids = [];
     for (const dep of deps) {
       if (t.isFunctionDeclaration(dep) && dep.id) {
         ids.push([dep.id.name, dep]);
       } else if (t.isVariableDeclaration(dep)) {
         dep.declarations.forEach((d) => {
-          ids.push([d.id.name, d]);
+          ids.push([/** @type BabelIdentifier */ (d.id).name, d]);
         });
       } else {
         // 非函数声明或者变量声明，可以是条件语句
@@ -214,10 +244,7 @@ module.exports = function (babel) {
         exit(path, state) {
           // 调整版本
           if (state.ambiguity && state.helperVersion === 6) {
-            const {
-              moduleNameV6 = V6_MODULE_NAME,
-              moduleNameV7 = V7_MODULE_NAME,
-            } = state.opts;
+            const { moduleNameV6 = V6_MODULE_NAME, moduleNameV7 = V7_MODULE_NAME } = state.opts;
             // 纠正 v7 helper 导入为 v6
             path.traverse({
               CallExpression(path, state) {
@@ -229,9 +256,7 @@ module.exports = function (babel) {
                   t.isStringLiteral(node.arguments[0]) &&
                   node.arguments[0].value.indexOf(moduleNameV7) !== -1
                 ) {
-                  node.arguments[0] = t.stringLiteral(
-                    node.arguments[0].value.replace(moduleNameV7, moduleNameV6),
-                  );
+                  node.arguments[0] = t.stringLiteral(node.arguments[0].value.replace(moduleNameV7, moduleNameV6));
                 }
               },
             });
@@ -246,12 +271,7 @@ module.exports = function (babel) {
         if (helper) {
           // 移除依赖
           removeDeps(path, helper.deps);
-          path.node.init = createRequirement(
-            helper.type,
-            helper.name,
-            path,
-            state.opts,
-          );
+          path.node.init = createRequirement(helper.type, helper.name, path, state);
         }
       },
       FunctionDeclaration(path, state) {
@@ -261,11 +281,8 @@ module.exports = function (babel) {
           removeDeps(path, helper.deps);
           path.replaceWith(
             t.variableDeclaration('var', [
-              t.variableDeclarator(
-                t.Identifier(name),
-                createRequirement(helper.type, helper.name, path, state.opts),
-              ),
-            ]),
+              t.variableDeclarator(t.identifier(name), createRequirement(helper.type, helper.name, path, state)),
+            ])
           );
         }
       },

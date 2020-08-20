@@ -19,7 +19,7 @@ describe('snapshot test', () => {
           const trimer = v === 6 ? trimV6 : trimV7;
           const result = trimer(_in, desc.options);
           const trimed = fs.readFileSync(_snapshot).toString();
-          expect(result.code).toBe(trimed);
+          expect(result.code).toMatch(trimed);
         });
       });
     });

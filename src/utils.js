@@ -1,21 +1,15 @@
 const { IGNORE_PROPERTIES } = require('./constants');
 
 /**
- * 判断模块是否安装
- * @param {string} name
+ * @typedef {import('@babel/traverse').Node} BabelNode
+ * @typedef {import('@babel/traverse').NodePath} BabelNodePath
+ * @typedef {import('@babel/types')} Types
  */
-function inModuleInstalled(name) {
-  try {
-    return !!require.resolve(name);
-  } catch (err) {
-    return false;
-  }
-}
 
 /**
  * 规范化块作用域, 如果是单语句, 则单独拎出来比较
- * @param {import('babel-traverse').Node} node
- * @param {import('babel-types')} t
+ * @param {BabelNode} node
+ * @param {Types} t
  */
 function preNormalize(node, t) {
   if (t.isBlockStatement(node) && node.body.length === 1) {
@@ -27,8 +21,8 @@ function preNormalize(node, t) {
 
 /**
  *
- * @param {import('babel-traverse').Node} node
- * @param {import('babel-types')} t
+ * @param {BabelNode} node
+ * @param {Types} t
  */
 function postNormalize(node, t) {
   // 如果是函数，则忽略 id 的比较
@@ -40,9 +34,9 @@ function postNormalize(node, t) {
 
 /**
  *
- * @param {import('babel-traverse').Node} a
- * @param {import('babel-traverse').Node} b
- * @param {import('babel-types')} t
+ * @param {BabelNode} a
+ * @param {BabelNode} b
+ * @param {Types} t
  */
 function isSameType(a, b, t) {
   if (a.type === b.type) {
@@ -54,11 +48,11 @@ function isSameType(a, b, t) {
   return false;
 }
 
-/*
+/**
  * 计算两个节点的相似度
  * @param {any} src
  * @param {any} obj
- * @param {import('babel-types')} t
+ * @param {Types} t
  */
 function calcNodeSimilarity(src, obj, t) {
   if (src === obj) {
@@ -112,8 +106,7 @@ function calcNodeSimilarity(src, obj, t) {
 }
 
 /**
- *
- * @param {import('babel-traverse').Node} node
+ * @param {BabelNode} node
  */
 function getNodeKeys(node) {
   return Object.keys(node).filter((key) => {
@@ -123,7 +116,8 @@ function getNodeKeys(node) {
 
 /**
  * 获取节点数量，包含自身
- * @param {import('babel-traverse').Node} node
+ * @param {any} node
+ * @returns {number}
  */
 function getNodeCounts(node) {
   if (node && typeof node === 'object') {
@@ -132,6 +126,7 @@ function getNodeCounts(node) {
     }
 
     if (Array.isArray(node)) {
+      // @ts-ignore
       return (node.__length = node.reduce((sum, cur) => {
         return sum + getNodeCounts(cur);
       }, 1));
@@ -150,7 +145,7 @@ function getNodeCounts(node) {
  * @deprecated
  * @param {any} src
  * @param {any} obj
- * @param {import('babel-types')} t
+ * @param {Types} t
  */
 function isNodeEqual(src, obj, t) {
   if (src === obj) {
@@ -200,7 +195,7 @@ function isNodeEqual(src, obj, t) {
 }
 /**
  * 获取最近的指定类型的父节点
- * @param {import('babel-traverse').NodePath} path
+ * @param {BabelNodePath} path
  * @param {string} type
  * @param {number} maxDepth 最多层数
  */
